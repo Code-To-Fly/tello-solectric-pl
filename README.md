@@ -1,2 +1,4 @@
-# tello-solectric-pl
-DJI Tello Edu to dron zaprojektowany specjalnie dla edukacji i nauki programowania
+# DJI Tello Edu to dron zaprojektowany specjalnie dla edukacji i nauki programowania.
+
+
+
