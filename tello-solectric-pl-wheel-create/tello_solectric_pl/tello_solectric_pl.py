@@ -83,9 +83,6 @@ class TelloEDU(TelloMain):
     W metodzie D.connect() sprawdza, czy to taki dron, czy poziom naładowania baterii jest wystarczający
     """
 
-    hardware_type = "TelloEDU"
-    min_battery_level = 25
-
     def __init__(self, info_all=False):
         """
 
@@ -96,8 +93,8 @@ class TelloEDU(TelloMain):
     def connect(self, wait_for_state=True) -> bool:
 
         return super().tello_connect(
-            hardware_type=hardware_type,
-            min_battery_level=min_battery_level,
+            hardware_type="TelloEDU",
+            min_battery_level=25,
             wait_for_state=wait_for_state,
         )
 
