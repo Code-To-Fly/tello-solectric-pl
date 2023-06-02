@@ -13,17 +13,19 @@ class TelloMain(Tello):
             Tello.LOGGER.setLevel(logging.CRITICAL)
         super().__init__()
 
-    def query_hardware(self):
+    def query_hardware(self) -> str:
         """
 
-        :return: "RMTT" if using the Controller on top of the RMTT, or "TELLO", if using a Tello or RMTT without
+        :return: "RMTT" if using the Controller on top of the RMTT, or "TelloEDU", if using a Tello or RMTT without
         the controller.
         :rtype:
         """
         try:
-            hardware = self.send_read_command('hardware?')
-            if hardware in ('ok', 'unknown command: hardware?'):
+            hardware = self.send_read_command("hardware?")
+            if hardware in ("ok", "unknown command: hardware?"):
                 hardware = "TelloEDU"
+            else:
+                print(f"Bład przy sprawdzeniu hardware: {hardware}")
         except Exception as exc:
             hardware = "TelloEDU"
 
@@ -36,7 +38,7 @@ class TelloMain(Tello):
         Returns:
             int: 1-100
         """
-        speed_value = self.send_read_command('speed?')
+        speed_value = self.send_read_command("speed?")
         try:
             speed_value = int(float(speed_value))
             self.last_speed_value = speed_value
@@ -45,6 +47,34 @@ class TelloMain(Tello):
 
         return speed_value
 
+    def tello_connect(self, hardware_type, min_battery_level, wait_for_state) -> bool:
+        connection_success = False
+        hardware_ok = False
+        hardware_probe = "xxxx"
+
+        try:
+            super().connect(wait_for_state=wait_for_state)
+            connection_success = True
+        except Exception as e:
+            print(f"Błąd przy wywołaniu CONNECT: {e}")
+            return False
+
+        hardware_probe = self.query_hardware()
+        if hardware_type == hardware_probe:
+            hardware_ok = True
+            print(f"Połączono z dronem typu {hardware_type}")
+            battery_level = self.get_battery()
+            print(f"Poziom baterii == ({battery_level} %)")
+            if battery_level < min_battery_level:
+                print(
+                    f"Poziom baterii zbyt niski - wymagane minimum to {min_battery_level} %."
+                )
+                return False
+        else:
+            print(f"Otrzymano: {repr(hardware_probe)} -> nie pasuje do {hardware_type}")
+
+        return connection_success and hardware_ok
+
 
 class TelloEDU(TelloMain):
     """
@@ -52,6 +82,7 @@ class TelloEDU(TelloMain):
     Klasa przeznaczona dla dronów Tello-EDU (czarny)
     W metodzie D.connect() sprawdza, czy to taki dron, czy poziom naładowania baterii jest wystarczający
     """
+
     hardware_type = "TelloEDU"
     min_battery_level = 25
 
@@ -63,31 +94,12 @@ class TelloEDU(TelloMain):
         super().__init__(info_all=info_all)
 
     def connect(self, wait_for_state=True) -> bool:
-        connection_success = False
-        hardware_ok = False
-        hardware_probe = "xxxx"
 
-
-        try:
-            super().connect(wait_for_state=wait_for_state)
-            connection_success = True
-        except Exception as e:
-            print(f"Błąd przy wywołaniu CONNECT: {e}")
-            return False
-
-        hardware_probe = self.query_hardware()
-        if self.hardware_type == hardware_probe:
-            hardware_ok = True
-            print(f"Połączono z dronem typu {self.hardware_type}")
-            battery_level = self.get_battery()
-	    print(f"Poziom baterii == ({battery_level} %)")
-            if battery_level < self.min_battery_level:
-                print(f"Poziom baterii zbyt niski - wymagane minimum to {self.min_battery_level} %.")
-                return False
-        else:
-            print(f"Otrzymano: {repr(hardware_probe)} -> nie pasuje do {self.hardware_type}")
-
-        return connection_success and hardware_ok
+        return super().tello_connect(
+            hardware_type=hardware_type,
+            min_battery_level=min_battery_level,
+            wait_for_state=wait_for_state,
+        )
 
 
 class RyzenTT(TelloMain):
@@ -96,5 +108,7 @@ class RyzenTT(TelloMain):
     W metodzie D.connect() sprawdza, czy to taki dron
     W przyszłości pojawią się definicje metod
     """
+
     hardware_type = "RyzenTT"
+    min_battery_level = 25
     pass
